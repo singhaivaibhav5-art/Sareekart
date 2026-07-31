@@ -1,0 +1,100 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "Saree product catalog entry",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "mrp": { "type": "number" },
+        "salePrice": { "type": "number" },
+        "rewardPoints": { "type": "number" },
+        "rating": { "type": "number" },
+        "reviewCount": { "type": "number" },
+        "images": { "type": "array", "items": { "type": "string" } },
+        "videoUrl": { "type": "string" },
+        "arModelUrl": { "type": "string" },
+        "fabric": { "type": "string text" },
+        "work": { "type": "string text" },
+        "blouseIncluded": { "type": "boolean" },
+        "length": { "type": "string" },
+        "washCare": { "type": "string text" },
+        "description": { "type": "string text" },
+        "inStock": { "type": "boolean" },
+        "stockCount": { "type": "number" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "isNewArrival": { "type": "boolean text" }
+      },
+      "required": ["id", "name", "category", "mrp", "salePrice", "images"]
+    },
+    "Banner": {
+      "title": "Banner",
+      "description": "Home hero banner sliders",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "subtitle": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "tag": { "type": "string" },
+        "targetCategory": { "type": "string" },
+        "discountBadge": { "type": "string" },
+        "active": { "type": "boolean" }
+      },
+      "required": ["id", "title", "imageUrl"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Customer purchase orders",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string font" },
+        "date": { "type": "string" },
+        "status": { "type": "string" },
+        "paymentMethod": { "type": "string" },
+        "totalAmount": { "type": "number" },
+        "coinsEarned": { "type": "number" },
+        "currentLocation": { "type": "string" },
+        "courierPartner": { "type": "string" },
+        "trackingNumber": { "type": "string" }
+      },
+      "required": ["id", "date", "status", "totalAmount"]
+    },
+    "UserQuery": {
+      "title": "UserQuery",
+      "description": "Customer support queries",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userName": { "type": "string" },
+        "userPhone": { "type": "string" },
+        "orderId": { "type": "string" },
+        "subject": { "type": "string" },
+        "description": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "status": { "type": "string" },
+        "date": { "type": "string" },
+        "adminReply": { "type": "string" }
+      },
+      "required": ["id", "userName", "description", "status"]
+    },
+    "Coupon": {
+      "title": "Coupon",
+      "description": "Discount coupon codes",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "code": { "type": "string" },
+        "discountType": { "type": "string" },
+        "discountValue": { "type": "number" },
+        "minOrderAmount": { "type": "number" },
+        "maxDiscount": { "type": "number" },
+        "expiryDate": { "type": "string" },
+        "active": { "type": "boolean" }
+      },
+      "required": ["id", "code", "discountType", "discountValue"]
+    }
+  }
+}

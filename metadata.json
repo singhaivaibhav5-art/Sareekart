@@ -1,0 +1,11 @@
+{
+  "name": "SareeKart - The Saree Destination",
+  "description": "Premium Saree E-commerce Mobile & Web Application with AI Stylist, AR Virtual Try-On, Rewards, and Admin Panel.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
