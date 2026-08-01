@@ -11,7 +11,7 @@ import { db, storage } from '../lib/firebase';
 import { doc, deleteDoc, setDoc, addDoc, collection } from 'firebase/firestore';
 import { ref, uploadBytes, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { BRAND_NAME } from '../constants';
-
+import BulkSaleUploader from './BulkSaleUploader';
 interface AdminPanelModalProps {
   isOpen: boolean;
   onClose: () => void;
