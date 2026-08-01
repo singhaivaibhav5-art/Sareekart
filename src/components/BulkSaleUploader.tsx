@@ -1,36 +1,28 @@
-// VEERANSH SAREES - BULK SALE UPLOADER FOR 1000s SAREES
-// File Location: src/components/BulkSaleUploader.jsx
-// Paste this file in your GitHub Repo -> src/components/
-
+// VEERANSH SAREES - BULK SALE UPLOADER - FINAL FIXED VERSION
+// File: src/components/BulkSaleUploader.tsx
 import React, { useState, useRef } from 'react';
-// 👇👇👇 IMPORTANT: Neeche wali 2 Line ko apne Project ke hisaab se change karo
-// Aapke project mein firebase config kahan hai check karo - src/firebase.js ya src/lib/firebase.js
-import { db, storage } from '../firebase'; 
+import { db, storage } from '../lib/firebase'; 
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
 const BulkSaleUploader = () => {
-  const [csvData, setCsvData] = useState([]);
-  const [fileMap, setFileMap] = useState(new Map());
-  const [fileList, setFileList] = useState([]);
-  const [preview, setPreview] = useState([]);
+  const [csvData, setCsvData] = useState<any[]>([]);
+  const [fileMap, setFileMap] = useState<Map<string, File>>(new Map());
+  const [fileList, setFileList] = useState<File[]>([]);
+  const [preview, setPreview] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0, success: 0, failed: 0, text: '' });
   const [bulkMRP, setBulkMRP] = useState('');
   const [bulkSale, setBulkSale] = useState('');
   const [bulkCategory, setBulkCategory] = useState('Banarasi');
-  const csvInputRef = useRef(null);
-  const filesInputRef = useRef(null);
 
-  // Simple CSV Parser (No library needed)
-  const parseCSV = (text) => {
+  const parseCSV = (text: string) => {
     const lines = text.split('\n').filter(l => l.trim());
     if(lines.length < 2) return [];
     const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-    const data = [];
+    const data: any[] = [];
     for(let i=1; i<lines.length; i++){
-      // Handle commas inside quotes
-      const values = [];
+      const values: string[] = [];
       let current = '';
       let inQuote = false;
       for(let char of lines[i]){
@@ -40,7 +32,7 @@ const BulkSaleUploader = () => {
       }
       values.push(current.trim());
       if(values.length === headers.length){
-        const obj = {};
+        const obj: any = {};
         headers.forEach((h, idx) => obj[h] = values[idx]?.replace(/^"|"$/g, '') || '');
         data.push(obj);
       }
@@ -48,26 +40,25 @@ const BulkSaleUploader = () => {
     return data;
   };
 
-  const handleCSV = async (e) => {
+  const handleCSV = async (e: any) => {
     const file = e.target.files[0];
     if(!file) return;
     const text = await file.text();
     const parsed = parseCSV(text);
     setCsvData(parsed);
-    setPreview(parsed.slice(0, 20)); // Show first 20 for preview
+    setPreview(parsed.slice(0, 20));
     alert(`CSV Loaded: ${parsed.length} Sarees Found`);
   };
 
-  const handleFiles = (e) => {
-    const files = Array.from(e.target.files);
+  const handleFiles = (e: any) => {
+    const files = Array.from(e.target.files) as File[];
     setFileList(files);
-    const map = new Map();
+    const map = new Map<string, File>();
     files.forEach(f => map.set(f.name, f));
     setFileMap(map);
     alert(`Files Selected: ${files.length} Images/Videos`);
   };
 
-  // Bulk Edit Functions
   const applyBulkMRP = () => {
     if(!bulkMRP) return;
     const updated = csvData.map(r => ({...r, mrp: bulkMRP}));
@@ -86,46 +77,36 @@ const BulkSaleUploader = () => {
     setPreview(updated.slice(0,20));
   };
 
-  const uploadSingleProduct = async (row) => {
+  const uploadFileAndGetURL = (file: File, path: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const storageRef = ref(storage, path);
+      const task = uploadBytesResumable(storageRef, file);
+      task.on('state_changed', null, reject, async () => {
+        const url = await getDownloadURL(task.snapshot.ref);
+        resolve(url);
+      });
+    });
+  };
+
+  const uploadSingleProduct = async (row: any) => {
     try {
-      const imageNames = (row.imageFileNames || '').split('|').map(s=>s.trim()).filter(Boolean);
-      const imageUrls = [];
-      
+      const imageNames = (row.imageFileNames || '').split('|').map((s:string)=>s.trim()).filter(Boolean);
+      const imageUrls: string[] = [];
       for(let imgName of imageNames){
         const file = fileMap.get(imgName);
         if(file){
-          const storageRef = ref(storage, `bulk-sale-2026/${Date.now()}_${imgName}`);
-          const snapshot = await uploadBytesResumable(storageRef, file).then(s=>s);
-          // Actually wait for upload
-          const uploadTask = await new Promise((resolve, reject) => {
-            const task = uploadBytesResumable(ref(storage, `bulk-sale-2026/${Date.now()}_${imgName}`), file);
-            task.on('state_changed', null, reject, async () => {
-              const url = await getDownloadURL(task.snapshot.ref);
-              resolve(url);
-            });
-          });
-          imageUrls.push(uploadTask);
+          const url = await uploadFileAndGetURL(file, `bulk-sale-2026/${Date.now()}_${imgName}`);
+          imageUrls.push(url);
         }
       }
-
-      // Video Upload
       let videoUrl = '';
       if(row.videoFileName){
         const vFile = fileMap.get(row.videoFileName.trim());
         if(vFile){
-          const vRef = ref(storage, `bulk-sale-videos/${Date.now()}_${row.videoFileName}`);
-          const task = uploadBytesResumable(vRef, vFile);
-          videoUrl = await new Promise((resolve, reject) => {
-            task.on('state_changed', null, reject, async () => {
-              const url = await getDownloadURL(task.snapshot.ref);
-              resolve(url);
-            });
-          });
+          videoUrl = await uploadFileAndGetURL(vFile, `bulk-sale-videos/${Date.now()}_${row.videoFileName}`);
         }
       }
-
-      if(imageUrls.length === 0) throw new Error('No images found for ' + row.productName);
-
+      if(imageUrls.length === 0) throw new Error('No images for ' + row.productName);
       await addDoc(collection(db, 'products'), {
         name: row.productName,
         category: row.category || 'Banarasi',
@@ -158,71 +139,49 @@ const BulkSaleUploader = () => {
   const startBulkUpload = async () => {
     if(csvData.length === 0){ alert('Pehle CSV Upload karo!'); return; }
     if(fileMap.size === 0){ alert('Pehle Images Folder Upload karo!'); return; }
-    if(!confirm(`${csvData.length} Sarees Upload karna hai? Laptop Charge pe rakho, 10-30 minute lagega.`)) return;
-
+    if(!confirm(`${csvData.length} Sarees Upload karna hai? Laptop Charge pe rakho.`)) return;
     setUploading(true);
     setProgress({ current: 0, total: csvData.length, success: 0, failed: 0, text: 'Starting...' });
-    
     let success = 0, failed = 0;
-    const CHUNK_SIZE = 5; // 5 at a time to avoid crash
-
+    const CHUNK_SIZE = 3;
     for(let i=0; i<csvData.length; i+=CHUNK_SIZE){
       const chunk = csvData.slice(i, i+CHUNK_SIZE);
       const results = await Promise.all(chunk.map(row => uploadSingleProduct(row)));
-      
       results.forEach(r => { if(r) success++; else failed++; });
-      
       const current = Math.min(i+CHUNK_SIZE, csvData.length);
-      setProgress({
-        current,
-        total: csvData.length,
-        success,
-        failed,
-        text: `Uploading ${current}/${csvData.length} | Success: ${success} Failed: ${failed}`
-      });
-      
-      // Small delay to avoid Firebase quota limit
-      await new Promise(res => setTimeout(res, 500));
+      setProgress({ current, total: csvData.length, success, failed, text: `Uploading ${current}/${csvData.length} | Success: ${success} Failed: ${failed}` });
+      await new Promise(res => setTimeout(res, 800));
     }
-
     setUploading(false);
-    alert(`MEGA UPLOAD COMPLETE!\nSuccess: ${success}\nFailed: ${failed}\nAb Catalog Horizontal Slider mein dekho.`);
+    alert(`MEGA UPLOAD COMPLETE!\nSuccess: ${success}\nFailed: ${failed}`);
   };
 
   return (
     <div className="p-6 bg-[#FFF8E7] min-h-screen">
-      <h1 className="text-3xl font-bold text-[#9D174D] mb-2">VEERANSH SAREES - Bulk Sale Uploader (1000s)</h1>
+      <h1 className="text-2xl font-bold text-[#9D174D] mb-2">VEERANSH SAREES - Bulk Sale Uploader (1000s)</h1>
       <p className="text-gray-600 mb-6">CSV + Images Folder se Hazaaro Sarees ek saath Sale mein daalo</p>
-
-      {/* Step 1 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div className="bg-white p-5 rounded-2xl border-2 border-yellow-200">
           <h3 className="font-bold text-lg mb-3">Step 1: Upload CSV File</h3>
-          <p className="text-sm text-gray-500 mb-3">Template: productName,category,mrp,salePrice,stock,description,imageFileNames (use | for multiple)</p>
-          <input ref={csvInputRef} type="file" accept=".csv" onChange={handleCSV} className="w-full p-2 border rounded" />
-          {csvData.length > 0 && <p className="mt-2 text-green-600 font-bold">✅ {csvData.length} Products Found in CSV</p>}
+          <input type="file" accept=".csv" onChange={handleCSV} className="w-full p-2 border rounded" />
+          {csvData.length > 0 && <p className="mt-2 text-green-600 font-bold">✅ {csvData.length} Products Found</p>}
         </div>
         <div className="bg-white p-5 rounded-2xl border-2 border-yellow-200">
-          <h3 className="font-bold text-lg mb-3">Step 2: Upload All Images & Videos Folder</h3>
-          <p className="text-sm text-gray-500 mb-3">Select 1000s files at once - Same names as in CSV</p>
-          <input ref={filesInputRef} type="file" multiple accept="image/*,video/*" onChange={handleFiles} className="w-full p-2 border rounded" />
+          <h3 className="font-bold text-lg mb-3">Step 2: Upload All Images & Videos</h3>
+          <input type="file" multiple accept="image/*,video/*" onChange={handleFiles} className="w-full p-2 border rounded" />
           {fileList.length > 0 && <p className="mt-2 text-green-600 font-bold">✅ {fileList.length} Files Selected</p>}
         </div>
       </div>
-
-      {/* Bulk Edit Bar */}
       {csvData.length > 0 && (
         <div className="bg-white p-4 rounded-2xl border-2 border-[#9D174D] mb-6 flex flex-wrap gap-4 items-end">
           <div><label className="text-sm">Set MRP for All</label><div className="flex gap-2"><input value={bulkMRP} onChange={e=>setBulkMRP(e.target.value)} placeholder="14999" className="border p-2 rounded w-24" /><button onClick={applyBulkMRP} className="bg-yellow-100 px-3 rounded">Apply</button></div></div>
-          <div><label className="text-sm">Set Sale Price for All</label><div className="flex gap-2"><input value={bulkSale} onChange={e=>setBulkSale(e.target.value)} placeholder="5999" className="border p-2 rounded w-24" /><button onClick={applyBulkSale} className="bg-yellow-100 px-3 rounded">Apply</button></div></div>
-          <div><label className="text-sm">Set Category for All</label><div className="flex gap-2"><select value={bulkCategory} onChange={e=>setBulkCategory(e.target.value)} className="border p-2 rounded"><option>Banarasi</option><option>Kanjivaram</option><option>Cotton</option><option>Silk</option><option>Chanderi</option><option>Designer</option></select><button onClick={applyBulkCategory} className="bg-yellow-100 px-3 rounded">Apply</button></div></div>
+          <div><label className="text-sm">Set Sale Price</label><div className="flex gap-2"><input value={bulkSale} onChange={e=>setBulkSale(e.target.value)} placeholder="5999" className="border p-2 rounded w-24" /><button onClick={applyBulkSale} className="bg-yellow-100 px-3 rounded">Apply</button></div></div>
+          <div><label className="text-sm">Set Category</label><div className="flex gap-2"><select value={bulkCategory} onChange={e=>setBulkCategory(e.target.value)} className="border p-2 rounded"><option>Banarasi</option><option>Kanjivaram</option><option>Cotton</option><option>Silk</option></select><button onClick={applyBulkCategory} className="bg-yellow-100 px-3 rounded">Apply</button></div></div>
         </div>
       )}
-
-      {/* Preview Horizontal Sliding */}
       {preview.length > 0 && (
         <div className="bg-white p-5 rounded-2xl border mb-6">
-          <h3 className="font-bold mb-3">Preview - First 20 Products (Horizontal Sliding)</h3>
+          <h3 className="font-bold mb-3">Preview - First 20 (Horizontal Sliding)</h3>
           <div className="flex gap-4 overflow-x-auto pb-4 snap-x">
             {preview.map((row, idx) => {
               const imgName = (row.imageFileNames||'').split('|')[0]?.trim();
@@ -240,8 +199,6 @@ const BulkSaleUploader = () => {
           </div>
         </div>
       )}
-
-      {/* Progress & Upload */}
       <div className="bg-white p-6 rounded-2xl border-2 border-[#9D174D] text-center">
         {uploading ? (
           <div>
@@ -250,23 +207,17 @@ const BulkSaleUploader = () => {
             </div>
             <p className="font-bold text-lg">{progress.text}</p>
             <p className="text-sm text-gray-500">{progress.current} / {progress.total} | Success: {progress.success} Failed: {progress.failed}</p>
-            <p className="text-xs mt-2 text-red-500">⚠️ Browser band mat karo, Laptop Charge pe rakho</p>
           </div>
         ) : (
           <div>
             <button onClick={startBulkUpload} disabled={csvData.length===0 || fileMap.size===0} className="bg-[#9D174D] text-[#F59E0B] px-10 py-4 rounded-xl font-bold text-xl disabled:bg-gray-300">
               🚀 START MEGA UPLOAD - {csvData.length} SAREES
             </button>
-            <p className="text-xs mt-3 text-gray-500">CSV: {csvData.length} | Files: {fileMap.size} | Chunk: 5 at a time | Time: ~1 min per 50 sarees</p>
+            <p className="text-xs mt-3 text-gray-500">CSV: {csvData.length} | Files: {fileMap.size}</p>
           </div>
         )}
-      </div>
-
-      <div className="mt-6 p-4 bg-yellow-50 rounded-xl text-sm">
-        <b>Note for 1000s Upload:</b> 1) Use Desktop Chrome, not Phone 2) File names in CSV must exactly match image file names 3) For multiple photos of same saree use | like img1.jpg|img2.jpg 4) Keep laptop plugged in
       </div>
     </div>
   );
 };
-
 export default BulkSaleUploader;
