@@ -221,13 +221,16 @@ export function App() {
       }
     }, (err) => console.log('Firestore products snapshot fallback', err));
 
-    fetch('/api/products')
-      .then((res) => res.json())
+       fetch('/api/products')
+      .then((res) => {
+        if (!res.ok) throw new Error(`API 404 - Using Local Data`);
+        return res.json();
+      })
       .then((data) => {
         if (data.success && data.products) {
           setProducts((prev) => {
             const fsIds = new Set(prev.map((p) => p.id));
-            const fresh = data.products.filter((p: Product) => !fsIds.has(p.id));
+            const fresh = data.products.filter((p: Product) => p && p.id && !fsIds.has(p.id));
             return [...prev, ...fresh];
           });
         }
@@ -235,7 +238,10 @@ export function App() {
       .catch((err) => console.log('Using default products data fallback', err));
 
     fetch('/api/banners')
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error('API 404 - Banners Local');
+        return res.json();
+      })
       .then((data) => {
         if (data.success) {
           if (data.banners) setBanners(data.banners);
@@ -245,7 +251,10 @@ export function App() {
       .catch((err) => console.log('Using default banners data fallback', err));
 
     fetch('/api/wallet')
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error('API 404 - Wallet Local');
+        return res.json();
+      })
       .then((data) => {
         if (data.success && data.walletCoins) setWalletCoins(data.walletCoins);
       })
