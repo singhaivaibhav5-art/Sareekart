@@ -2089,7 +2089,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                   )}
                 </div>
               )}
-
+              {activeTab === 'BULK_SALE' && <BulkSaleUploader />}
               {/* ================= REQUIREMENT 4: BANNER MANAGEMENT ================= */}
               {activeTab === 'BANNERS' && (
                 <div className="space-y-4">
