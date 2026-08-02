@@ -27,54 +27,41 @@ import { AIRecommendationEngineWidget } from './components/AIRecommendationEngin
 import { WishlistPriceDropNotification } from './components/WishlistPriceDropNotification';
 import { AIDrapingGuideModal } from './components/AIDrapingGuideModal';
 import { AIStyleQuizModal } from './components/AIStyleQuizModal';
-import { Sparkles, ShoppingBag, Heart, ShieldCheck, ArrowUp } from 'lucide-react';
 
 export function App() {
-  // Main Catalog & Content State
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [banners, setBanners] = useState<Banner[]>(INITIAL_BANNERS);
   const [adBanner, setAdBanner] = useState<AdBanner>(INITIAL_AD_BANNER);
   const [queries, setQueries] = useState<CustomerQuery[]>(INITIAL_QUERIES);
-
-  // Filters & Search
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // User Signal & Persistence State
   const [browsingHistory, setBrowsingHistory] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('sareekart_browsing_history');
-      return saved ? JSON.parse(saved) : ['p1', 'p3'];
-    } catch {
-      return ['p1', 'p3'];
-    }
+      return saved? JSON.parse(saved) : ['p1', 'p3'];
+    } catch { return ['p1', 'p3']; }
   });
 
   const [wishlistIds, setWishlistIds] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('sareekart_wishlist');
-      return saved ? JSON.parse(saved) : ['p1'];
-    } catch {
-      return ['p1'];
-    }
+      return saved? JSON.parse(saved) : ['p1'];
+    } catch { return ['p1']; }
   });
 
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
     try {
       const saved = localStorage.getItem('sareekart_cart');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
+      return saved? JSON.parse(saved) : [];
+    } catch { return []; }
   });
 
   const [orders, setOrders] = useState<Order[]>(() => {
     try {
       const saved = localStorage.getItem('sareekart_orders');
-      return saved && JSON.parse(saved).length > 0 ? JSON.parse(saved) : INITIAL_ORDERS;
-    } catch {
-      return INITIAL_ORDERS;
-    }
+      return saved && JSON.parse(saved).length > 0? JSON.parse(saved) : INITIAL_ORDERS;
+    } catch { return INITIAL_ORDERS; }
   });
 
   const [walletCoins, setWalletCoins] = useState<number>(250);
@@ -88,7 +75,6 @@ export function App() {
     savedAddresses: [],
   });
 
-  // Modal & Drawer UI Open States
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isVoiceSearchOpen, setIsVoiceSearchOpen] = useState(false);
   const [isImageSearchOpen, setIsImageSearchOpen] = useState(false);
@@ -103,168 +89,109 @@ export function App() {
   const [arTryOnProduct, setArTryOnProduct] = useState<Product | null>(null);
   const [isDrapingTutorialOpen, setIsDrapingTutorialOpen] = useState(false);
   const [isStyleQuizOpen, setIsStyleQuizOpen] = useState(false);
-
-  // Order Tracker Modal State
   const [isOrderTrackerOpen, setIsOrderTrackerOpen] = useState(false);
   const [trackedOrder, setTrackedOrder] = useState<Order | null>(null);
 
-  // Synchronize state to LocalStorage
-  useEffect(() => {
-    localStorage.setItem('sareekart_browsing_history', JSON.stringify(browsingHistory));
-  }, [browsingHistory]);
+  useEffect(() => { localStorage.setItem('sareekart_browsing_history', JSON.stringify(browsingHistory)); }, [browsingHistory]);
+  useEffect(() => { localStorage.setItem('sareekart_wishlist', JSON.stringify(wishlistIds)); }, [wishlistIds]);
+  useEffect(() => { localStorage.setItem('sareekart_cart', JSON.stringify(cartItems)); }, [cartItems]);
+  useEffect(() => { localStorage.setItem('sareekart_orders', JSON.stringify(orders)); }, [orders]);
 
-  useEffect(() => {
-    localStorage.setItem('sareekart_wishlist', JSON.stringify(wishlistIds));
-  }, [wishlistIds]);
-
-  useEffect(() => {
-    localStorage.setItem('sareekart_cart', JSON.stringify(cartItems));
-  }, [cartItems]);
-
-  useEffect(() => {
-    localStorage.setItem('sareekart_orders', JSON.stringify(orders));
-  }, [orders]);
-
-  // Firebase Auth state listener & sync user document from Firestore
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       if (fbUser) {
         try {
           const userDocRef = doc(db, 'users', fbUser.uid);
           const userDocSnap = await getDoc(userDocRef);
-
           if (userDocSnap.exists()) {
             const data = userDocSnap.data();
             setUser({
               name: data.name || fbUser.displayName || 'Royal Veeransh Patron',
               phone: data.phone || fbUser.phoneNumber?.replace('+91', '') || '9876543210',
               email: data.email || fbUser.email || 'patron@veeranshsarees.com',
-              walletCoins: data.walletCoins ?? 250,
+              walletCoins: data.walletCoins?? 250,
               isLoggedIn: true,
               savedAddresses: data.savedAddresses || [],
             });
-
-            if (data.wishlistIds && Array.isArray(data.wishlistIds)) {
-              setWishlistIds(data.wishlistIds);
-            }
-            if (data.cartItems && Array.isArray(data.cartItems)) {
-              setCartItems(data.cartItems);
-            }
-            if (data.walletCoins !== undefined) {
-              setWalletCoins(data.walletCoins);
-            }
+            if (data.wishlistIds && Array.isArray(data.wishlistIds)) setWishlistIds(data.wishlistIds);
+            if (data.cartItems && Array.isArray(data.cartItems)) setCartItems(data.cartItems);
+            if (data.walletCoins!== undefined) setWalletCoins(data.walletCoins);
           } else {
             const initialUserData = {
               uid: fbUser.uid,
               name: fbUser.displayName || 'Royal Veeransh Patron',
               email: fbUser.email || 'patron@veeranshsarees.com',
-              phone: fbUser.phoneNumber ? fbUser.phoneNumber.replace('+91', '') : '9876543210',
+              phone: fbUser.phoneNumber? fbUser.phoneNumber.replace('+91', '') : '9876543210',
               walletCoins: 250,
               wishlistIds,
               cartItems,
               createdAt: new Date().toISOString(),
             };
             await setDoc(userDocRef, initialUserData, { merge: true });
-            setUser({
-              name: initialUserData.name,
-              phone: initialUserData.phone,
-              email: initialUserData.email,
-              walletCoins: 250,
-              isLoggedIn: true,
-              savedAddresses: [],
-            });
+            setUser({ name: initialUserData.name, phone: initialUserData.phone, email: initialUserData.email, walletCoins: 250, isLoggedIn: true, savedAddresses: [] });
           }
-        } catch (err) {
-          console.error('Error syncing user profile from Firestore:', err);
-        }
+        } catch (err) { console.error('Error syncing user profile from Firestore:', err); }
       }
     });
-
     return () => unsubscribe();
   }, []);
 
-  // Sync Wishlist, Cart & Wallet state changes to Firestore when authenticated
   useEffect(() => {
     if (auth.currentUser && user.isLoggedIn) {
       const userDocRef = doc(db, 'users', auth.currentUser.uid);
-      setDoc(
-        userDocRef,
-        {
-          wishlistIds,
-          cartItems,
-          walletCoins,
-          name: user.name,
-          phone: user.phone,
-          email: user.email,
-          updatedAt: new Date().toISOString(),
-        },
-        { merge: true }
-      ).catch((err) => console.log('Firestore user doc sync error:', err));
+      setDoc(userDocRef, { wishlistIds, cartItems, walletCoins, name: user.name, phone: user.phone, email: user.email, updatedAt: new Date().toISOString() }, { merge: true }).catch((err) => console.log('Firestore user doc sync error:', err));
     }
   }, [wishlistIds, cartItems, walletCoins, user]);
 
-  // Sync data from server API on boot & listen to Firestore collection updates
   useEffect(() => {
-    // Listen to Firestore products collection for real-time updates (Bulk uploads, edits, etc.)
-    const unsubscribeProducts = onSnapshot(collection(db, 'products'), (snapshot) => {
-      if (!snapshot.empty) {
-        const firestoreProds: Product[] = snapshot.docs.map((docSnap) => ({
-          id: docSnap.id,
-          ...docSnap.data(),
-        } as Product));
-        setProducts((prev) => {
-          // Merge Firestore prods with current prods avoiding duplicates
-          const existingIds = new Set(firestoreProds.map((p) => p.id));
-          const nonDupPrev = prev.filter((p) => !existingIds.has(p.id));
-          return [...firestoreProds, ...nonDupPrev];
-        });
+    let unsubscribeProducts: () => void = () => {};
+    try {
+      if (db) {
+        unsubscribeProducts = onSnapshot(collection(db, 'products'), (snapshot) => {
+          if (!snapshot.empty) {
+            const firestoreProds: Product[] = snapshot.docs.map((docSnap) => ({ id: docSnap.id,...docSnap.data() } as Product));
+            setProducts((prev) => {
+              const existingIds = new Set(firestoreProds.map((p) => p.id));
+              const nonDupPrev = prev.filter((p) =>!existingIds.has(p.id));
+              return [...firestoreProds,...nonDupPrev];
+            });
+          }
+        }, (err) => console.log('Firestore products snapshot fallback', err));
       }
-    }, (err) => console.log('Firestore products snapshot fallback', err));
+    } catch (e) { console.log('Firestore init fallback', e); }
 
-       fetch('/api/products')
-      .then((res) => {
-        if (!res.ok) throw new Error(`API 404 - Using Local Data`);
-        return res.json();
-      })
-      .then((data) => {
+    fetch('/api/products')
+     .then((res) => { if (!res.ok) throw new Error(`API 404 - Using Local Data`); return res.json(); })
+     .then((data) => {
         if (data.success && data.products) {
           setProducts((prev) => {
             const fsIds = new Set(prev.map((p) => p.id));
-            const fresh = data.products.filter((p: Product) => p && p.id && !fsIds.has(p.id));
-            return [...prev, ...fresh];
+            const fresh = data.products.filter((p: Product) => p && p.id &&!fsIds.has(p.id));
+            return [...prev,...fresh];
           });
         }
       })
-      .catch((err) => console.log('Using default products data fallback', err));
+     .catch((err) => console.log('Using default products data fallback', err));
 
     fetch('/api/banners')
-      .then((res) => {
-        if (!res.ok) throw new Error('API 404 - Banners Local');
-        return res.json();
-      })
-      .then((data) => {
+     .then((res) => { if (!res.ok) throw new Error('API 404 - Banners Local'); return res.json(); })
+     .then((data) => {
         if (data.success) {
           if (data.banners) setBanners(data.banners);
           if (data.adBanner) setAdBanner(data.adBanner);
         }
       })
-      .catch((err) => console.log('Using default banners data fallback', err));
+     .catch((err) => console.log('Using default banners data fallback', err));
 
     fetch('/api/wallet')
-      .then((res) => {
-        if (!res.ok) throw new Error('API 404 - Wallet Local');
-        return res.json();
-      })
-      .then((data) => {
-        if (data.success && data.walletCoins) setWalletCoins(data.walletCoins);
-      })
-      .catch((err) => console.log('Using default wallet data fallback', err));
+     .then((res) => { if (!res.ok) throw new Error('API 404 - Wallet Local'); return res.json(); })
+     .then((data) => { if (data.success && data.walletCoins) setWalletCoins(data.walletCoins); })
+     .catch((err) => console.log('Using default wallet data fallback', err));
 
-    // Fetch initial orders & set up live polling
     const fetchOrders = () => {
       fetch('/api/orders')
-        .then((res) => res.json())
-        .then((data) => {
+       .then((res) => { if (!res.ok) throw new Error('API 404 - Orders Local'); return res.json(); })
+       .then((data) => {
           if (data.success && data.orders && data.orders.length > 0) {
             setOrders(data.orders);
             setTrackedOrder((prev) => {
@@ -274,499 +201,101 @@ export function App() {
             });
           }
         })
-        .catch((err) => console.log('Using initial orders data fallback', err));
+       .catch((err) => console.log('Using initial orders data fallback', err));
     };
 
     fetchOrders();
-    const interval = setInterval(fetchOrders, 4000); // 4-second live poll
-    return () => {
-      unsubscribeProducts();
-      clearInterval(interval);
-    };
+    const interval = setInterval(fetchOrders, 4000);
+    return () => { try { unsubscribeProducts(); } catch {} clearInterval(interval); };
   }, []);
 
-  // Update order status (Admin & Stepper)
-  const handleUpdateOrderStatus = (
-    orderId: string, 
-    newStatus: OrderStatus, 
-    note?: string, 
-    location?: string,
-    courierName?: string,
-    trackingId?: string,
-    dispatchDate?: string
-  ) => {
+  const handleUpdateOrderStatus = (orderId: string, newStatus: OrderStatus, note?: string, location?: string, courierName?: string, trackingId?: string, dispatchDate?: string) => {
     fetch(`/api/orders/${orderId}/status`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: newStatus, note, location, courierName, trackingId, dispatchDate }),
     })
-      .then((res) => res.json())
-      .then((data) => {
+     .then((res) => { if (!res.ok) throw new Error(`API ${res.status}`); return res.json(); })
+     .then((data) => {
         if (data.success && data.order) {
-          setOrders((prev) => prev.map((o) => (o.id === orderId ? data.order : o)));
-          if (trackedOrder?.id === orderId) {
-            setTrackedOrder(data.order);
-          }
+          setOrders((prev) => prev.map((o) => (o.id === orderId? data.order : o)));
+          if (trackedOrder?.id === orderId) setTrackedOrder(data.order);
         }
       })
-      .catch(() => {
-        // Fallback for offline mode
-        setOrders((prev) =>
-          prev.map((o) => {
-            if (o.id === orderId) {
-              const updatedStageHistory = [
-                ...(o.stageHistory || []),
-                {
-                  stage: newStatus,
-                  timestamp: `Today, ${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`,
-                  location: location || 'Logistics Hub',
-                  note: note || `Order stage advanced to ${newStatus}`,
-                  completed: newStatus === 'Delivered',
-                },
-              ];
-              return {
-                ...o,
-                status: newStatus,
-                courierPartner: courierName || o.courierPartner,
-                trackingNumber: trackingId || o.trackingNumber,
-                currentLocation: location || o.currentLocation,
-                stageHistory: updatedStageHistory,
-              };
-            }
-            return o;
-          })
-        );
+     .catch(() => {
+        setOrders((prev) => prev.map((o) => {
+          if (o.id === orderId) {
+            const updatedStageHistory = [...(o.stageHistory || []), { stage: newStatus, timestamp: `Today, ${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`, location: location || 'Logistics Hub', note: note || `Order stage advanced to ${newStatus}`, completed: newStatus === 'Delivered' }];
+            return {...o, status: newStatus, courierPartner: courierName || o.courierPartner, trackingNumber: trackingId || o.trackingNumber, currentLocation: location || o.currentLocation, stageHistory: updatedStageHistory };
+          }
+          return o;
+        }));
       });
   };
 
-  // Track product view in browsing history
   const handleSelectProduct = (product: Product) => {
     setSelectedProduct(product);
-    setBrowsingHistory((prev) => {
-      const filtered = prev.filter((id) => id !== product.id);
-      return [product.id, ...filtered].slice(0, 20);
-    });
+    setBrowsingHistory((prev) => { const filtered = prev.filter((id) => id!== product.id); return [product.id,...filtered].slice(0, 20); });
   };
-
-  // Toggle Wishlist
-  const handleToggleWishlist = (productId: string) => {
-    setWishlistIds((prev) =>
-      prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]
-    );
-  };
-
-  // Add item to Cart
+  const handleToggleWishlist = (productId: string) => { setWishlistIds((prev) => prev.includes(productId)? prev.filter((id) => id!== productId) : [...prev, productId]); };
   const handleAddToCart = (product: Product, blouseStitching: boolean = false) => {
     setCartItems((prev) => {
       const existing = prev.find((item) => item.product.id === product.id && item.blouseStitching === blouseStitching);
-      if (existing) {
-        return prev.map((item) =>
-          item.product.id === product.id && item.blouseStitching === blouseStitching
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      }
+      if (existing) return prev.map((item) => item.product.id === product.id && item.blouseStitching === blouseStitching? {...item, quantity: item.quantity + 1 } : item);
       return [...prev, { product, quantity: 1, blouseStitching }];
     });
     setIsCartOpen(true);
   };
-
-  // Update Cart Quantity
-  const handleUpdateQuantity = (productId: string, delta: number) => {
-    setCartItems((prev) =>
-      prev
-        .map((item) => {
-          if (item.product.id === productId) {
-            const newQty = item.quantity + delta;
-            return newQty > 0 ? { ...item, quantity: newQty } : null;
-          }
-          return item;
-        })
-        .filter(Boolean) as CartItem[]
-    );
-  };
-
-  // Remove Cart Item
-  const handleRemoveCartItem = (productId: string) => {
-    setCartItems((prev) => prev.filter((item) => item.product.id !== productId));
-  };
-
-  // Category selection with smooth scroll to product grid (Requirement 5)
-  const handleSelectCategoryAndScroll = (categoryName: string) => {
-    setSelectedCategory(categoryName);
-    setTimeout(() => {
-      const el = document.getElementById('product-catalog');
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }, 100);
-  };
-
-  // Checkout Success Order Handler
-  const handleOrderSuccess = (newOrder: Order) => {
-    setOrders((prev) => [newOrder, ...prev]);
-    setCartItems([]);
-    if (newOrder.earnedCoins > 0) {
-      setWalletCoins((prev) => prev + newOrder.earnedCoins);
-    }
-    if (newOrder.coinsUsed > 0) {
-      setWalletCoins((prev) => Math.max(0, prev - newOrder.coinsUsed));
-    }
-  };
-
-  // AR Try-On Handler
-  const handleOpenARTryOn = (product: Product) => {
-    setArTryOnProduct(product);
-    setIsARTryOnOpen(true);
-    handleSelectProduct(product);
-  };
-
-  // Trigger Simulated Price Drop / Flash Sale for wishlisted item
-  const handleTriggerSimulatedDrop = (productId: string, newPrice: number) => {
-    setProducts((prev) =>
-      prev.map((p) => (p.id === productId ? { ...p, salePrice: newPrice, isFlashSale: true } : p))
-    );
-  };
-
-  // Check if any wishlisted item is on price drop or flash sale
-  const hasWishlistPriceDrop = products.some(
-    (p) => wishlistIds.includes(p.id) && (p.isFlashSale || p.mrp > p.salePrice)
-  );
-
-  // Filtered Products list
+  const handleUpdateQuantity = (productId: string, delta: number) => { setCartItems((prev) => prev.map((item) => { if (item.product.id === productId) { const newQty = item.quantity + delta; return newQty > 0? {...item, quantity: newQty } : null; } return item; }).filter(Boolean) as CartItem[]); };
+  const handleRemoveCartItem = (productId: string) => { setCartItems((prev) => prev.filter((item) => item.product.id!== productId)); };
+  const handleSelectCategoryAndScroll = (categoryName: string) => { setSelectedCategory(categoryName); setTimeout(() => { const el = document.getElementById('product-catalog'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100); };
+  const handleOrderSuccess = (newOrder: Order) => { setOrders((prev) => [newOrder,...prev]); setCartItems([]); if (newOrder.earnedCoins > 0) setWalletCoins((prev) => prev + newOrder.earnedCoins); if (newOrder.coinsUsed > 0) setWalletCoins((prev) => Math.max(0, prev - newOrder.coinsUsed)); };
+  const handleOpenARTryOn = (product: Product) => { setArTryOnProduct(product); setIsARTryOnOpen(true); handleSelectProduct(product); };
+  const handleTriggerSimulatedDrop = (productId: string, newPrice: number) => { setProducts((prev) => prev.map((p) => (p.id === productId? {...p, salePrice: newPrice, isFlashSale: true } : p))); };
+  const hasWishlistPriceDrop = products.some((p) => wishlistIds.includes(p.id) && (p.isFlashSale || p.mrp > p.salePrice));
   const filteredProducts = products.filter((p) => {
-    const matchesCategory =
-      selectedCategory === 'All' || p.category.toLowerCase() === selectedCategory.toLowerCase();
+    const matchesCategory = selectedCategory === 'All' || p.category.toLowerCase() === selectedCategory.toLowerCase();
     const q = searchQuery.toLowerCase().trim();
-    const matchesSearch =
-      !q ||
-      p.name.toLowerCase().includes(q) ||
-      p.category.toLowerCase().includes(q) ||
-      p.fabric.toLowerCase().includes(q) ||
-      p.work.toLowerCase().includes(q) ||
-      p.tags.some((t) => t.toLowerCase().includes(q));
-
+    const matchesSearch =!q || p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q) || p.fabric.toLowerCase().includes(q) || p.work.toLowerCase().includes(q) || p.tags.some((t) => t.toLowerCase().includes(q));
     return matchesCategory && matchesSearch;
   });
-
-  const pageTitle = selectedCategory !== 'All' 
-    ? `${selectedCategory} Pure Silk Sarees Direct from Master Artisans | ${BRAND_NAME}`
-    : searchQuery 
-    ? `Search: "${searchQuery}" | ${BRAND_NAME} Handloom Sarees`
-    : `${BRAND_NAME} | Luxury Handloom Silk, Banarasi & Kanjivaram Sarees`;
-
-  const pageDesc = selectedCategory !== 'All'
-    ? `Explore our exclusive ${selectedCategory} handloom saree collection with certified gold & silver Zari. Enjoy AR virtual try-on and direct weaver pricing.`
-    : `Shop pure Banarasi, Kanjivaram, Organza, and Chanderi silk sarees direct from weavers. Certified purity, AR try-on, and worldwide express air shipping on ${BRAND_NAME}.`;
+  const pageTitle = selectedCategory!== 'All'? `${selectedCategory} Pure Silk Sarees Direct from Master Artisans | ${BRAND_NAME}` : searchQuery? `Search: "${searchQuery}" | ${BRAND_NAME} Handloom Sarees` : `${BRAND_NAME} | Luxury Handloom Silk, Banarasi & Kanjivaram Sarees`;
+  const pageDesc = selectedCategory!== 'All'? `Explore our exclusive ${selectedCategory} handloom saree collection with certified gold & silver Zari. Enjoy AR virtual try-on and direct weaver pricing.` : `Shop pure Banarasi, Kanjivaram, Organza, and Chanderi silk sarees direct from weavers. Certified purity, AR try-on, and worldwide express air shipping on ${BRAND_NAME}.`;
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] text-slate-900 flex flex-col font-sans max-w-md sm:max-w-2xl lg:max-w-5xl mx-auto shadow-2xl border-x border-amber-200 relative">
       <Helmet>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDesc} />
-        <meta property="og:title" content={pageTitle} />
-        <meta property="og:description" content={pageDesc} />
-        <meta property="og:type" content="website" />
-        <meta property="og:site_name" content={BRAND_NAME} />
-        <meta property="og:image" content="https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&q=80&w=1200" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={pageTitle} />
-        <meta name="twitter:description" content={pageDesc} />
       </Helmet>
-      
-      {/* Real-Time Push Notification Toast Banner for Wishlist Price Drops */}
-      <WishlistPriceDropNotification
-        products={products}
-        wishlistIds={wishlistIds}
-        onSelectProduct={handleSelectProduct}
-        onAddToCart={handleAddToCart}
-        onOpenWishlist={() => setIsWishlistOpen(true)}
-        onTriggerSimulatedDrop={handleTriggerSimulatedDrop}
-      />
-
-      {/* 1. Sticky Top Navbar with Voice & Image Search, Bag, Wishlist */}
-      <Navbar
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        openVoiceSearch={() => setIsVoiceSearchOpen(true)}
-        openImageSearch={() => setIsImageSearchOpen(true)}
-        cartCount={cartItems.reduce((acc, i) => acc + i.quantity, 0)}
-        openCart={() => setIsCartOpen(true)}
-        wishlistCount={wishlistIds.length}
-        openWishlist={() => setIsWishlistOpen(true)}
-        openAIStylist={() => setIsAIStylistOpen(true)}
-        openAuth={() => setIsAuthOpen(true)}
-        openWallet={() => setIsWalletOpen(true)}
-        isLoggedIn={user.isLoggedIn}
-        walletCoins={walletCoins}
-        openAdmin={() => setIsAdminOpen(true)}
-        hasWishlistPriceDrop={hasWishlistPriceDrop}
-        openDrapingGuide={() => setIsDrapingTutorialOpen(true)}
-        openStyleQuiz={() => setIsStyleQuizOpen(true)}
-        openOrderTracker={() => {
-          if (orders.length > 0) setTrackedOrder(orders[0]);
-          setIsOrderTrackerOpen(true);
-        }}
-      />
-
-      {/* Main Home Page Body */}
+      <WishlistPriceDropNotification products={products} wishlistIds={wishlistIds} onSelectProduct={handleSelectProduct} onAddToCart={handleAddToCart} onOpenWishlist={() => setIsWishlistOpen(true)} onTriggerSimulatedDrop={handleTriggerSimulatedDrop} />
+      <Navbar searchQuery={searchQuery} setSearchQuery={setSearchQuery} openVoiceSearch={() => setIsVoiceSearchOpen(true)} openImageSearch={() => setIsImageSearchOpen(true)} cartCount={cartItems.reduce((acc, i) => acc + i.quantity, 0)} openCart={() => setIsCartOpen(true)} wishlistCount={wishlistIds.length} openWishlist={() => setIsWishlistOpen(true)} openAIStylist={() => setIsAIStylistOpen(true)} openAuth={() => setIsAuthOpen(true)} openWallet={() => setIsWalletOpen(true)} isLoggedIn={user.isLoggedIn} walletCoins={walletCoins} openAdmin={() => setIsAdminOpen(true)} hasWishlistPriceDrop={hasWishlistPriceDrop} openDrapingGuide={() => setIsDrapingTutorialOpen(true)} openStyleQuiz={() => setIsStyleQuizOpen(true)} openOrderTracker={() => { if (orders.length > 0) setTrackedOrder(orders[0]); setIsOrderTrackerOpen(true); }} />
       <main className="flex-1 pb-20 space-y-2">
-        
-        {/* Section 1: Auto-Scrolling Banner Slider (3"x2" ratio, 10 images, admin editable, countdown) */}
-        <BannerSlider
-          banners={banners}
-          showFlashSaleAlert={showFlashSaleAlert}
-          onCategorySelect={(cat) => handleSelectCategoryAndScroll(cat)}
-          openAdmin={() => setIsAdminOpen(true)}
-        />
-
-        {/* Section 2: Horizontal Scrolling Category Gallery (1.5"x1.5" circular boxes) */}
-        <CategoryGallery
-          selectedCategory={selectedCategory}
-          onSelectCategory={(cat) => handleSelectCategoryAndScroll(cat)}
-          openStyleQuiz={() => setIsStyleQuizOpen(true)}
-        />
-
-        {/* Feature Focus: AI Style Recommendation Engine Homepage Widget */}
-        <AIRecommendationEngineWidget
-          products={products}
-          browsingHistory={browsingHistory}
-          orders={orders}
-          wishlistIds={wishlistIds}
-          onToggleWishlist={handleToggleWishlist}
-          onSelectProduct={handleSelectProduct}
-          onAddToCart={handleAddToCart}
-          onOpenARTryOn={handleOpenARTryOn}
-          onOpenEngineModal={() => setIsAIEngineModalOpen(true)}
-        />
-
-        {/* Section 3: Ad Banner Box (3"x2.5", admin editable) */}
-        <AdBannerBox
-          adBanner={adBanner}
-          onCategorySelect={(cat) => handleSelectCategoryAndScroll(cat)}
-          openAdmin={() => setIsAdminOpen(true)}
-        />
-
-        {/* Section 4: 2-Column Product Grid (Image, Name, MRP Striked, Sale Price, Reward Points, Wishlist Heart) */}
-        <ProductGrid
-          products={filteredProducts}
-          wishlistIds={wishlistIds}
-          onToggleWishlist={handleToggleWishlist}
-          onSelectProduct={handleSelectProduct}
-          onAddToCart={handleAddToCart}
-          selectedCategory={selectedCategory}
-        />
+        <BannerSlider banners={banners} showFlashSaleAlert={showFlashSaleAlert} onCategorySelect={(cat) => handleSelectCategoryAndScroll(cat)} openAdmin={() => setIsAdminOpen(true)} />
+        <CategoryGallery selectedCategory={selectedCategory} onSelectCategory={(cat) => handleSelectCategoryAndScroll(cat)} openStyleQuiz={() => setIsStyleQuizOpen(true)} />
+        <AIRecommendationEngineWidget products={products} browsingHistory={browsingHistory} orders={orders} wishlistIds={wishlistIds} onToggleWishlist={handleToggleWishlist} onSelectProduct={handleSelectProduct} onAddToCart={handleAddToCart} onOpenARTryOn={handleOpenARTryOn} onOpenEngineModal={() => setIsAIEngineModalOpen(true)} />
+        <AdBannerBox adBanner={adBanner} onCategorySelect={(cat) => handleSelectCategoryAndScroll(cat)} openAdmin={() => setIsAdminOpen(true)} />
+        <ProductGrid products={filteredProducts} wishlistIds={wishlistIds} onToggleWishlist={handleToggleWishlist} onSelectProduct={handleSelectProduct} onAddToCart={handleAddToCart} selectedCategory={selectedCategory} />
       </main>
-
-      {/* Floating Action Button: AI Recommendation Engine & Stylist Drawer */}
-      <div className="fixed bottom-4 right-4 z-40 flex flex-col items-end gap-2.5">
-        <button
-          onClick={() => setIsAIEngineModalOpen(true)}
-          className="bg-gradient-to-r from-amber-400 via-amber-500 to-amber-300 text-pink-950 font-extrabold px-4 py-2.5 rounded-full shadow-2xl hover:brightness-110 transition flex items-center gap-2 border-2 border-amber-200 text-xs animate-bounce"
-        >
-          <Sparkles className="w-4 h-4 text-pink-950" />
-          <span>AI Recommendation Engine ✨</span>
-        </button>
-
-        <button
-          onClick={() => setIsAIStylistOpen(true)}
-          className="bg-[#9D174D] text-amber-300 font-bold p-3 rounded-full shadow-xl hover:bg-[#831843] transition flex items-center justify-center border border-amber-400/50"
-          title="Open AI Chatbot"
-        >
-          💬
-        </button>
-      </div>
-
-      {/* Footer Branding */}
       <footer className="bg-[#831843] text-amber-100 text-center py-6 px-4 text-xs space-y-2 border-t border-amber-500/30">
-        <p className="font-serif-royal font-bold text-sm text-white flex items-center justify-center gap-1">
-          <span>👑</span> {BRAND_NAME}
-        </p>
-        <p className="text-[11px] text-amber-200/80">
-          Handcrafted Banarasi, Kanjivaram, Cotton & Silk Sarees delivered worldwide.
-        </p>
-        <div className="flex items-center justify-center gap-3 pt-2 text-[10px] text-amber-300 font-semibold">
-          <span className="flex items-center gap-1">
-            <ShieldCheck className="w-3 h-3 text-amber-400" /> 100% Authentic Silk Mark
-          </span>
-          <span>•</span>
-          <span>Free Express Shipping</span>
-          <span>•</span>
-          <span>Razorpay & COD Supported</span>
-        </div>
+        <p className="font-bold text-sm text-white">👑 {BRAND_NAME}</p>
+        <p className="text-[11px] text-amber-200/80">Handcrafted Banarasi, Kanjivaram, Cotton & Silk Sarees delivered worldwide.</p>
       </footer>
-
-      {/* ================= MODALS & DRAWERS ================= */}
-
-      {/* AI Style Recommendation Engine Modal */}
-      <AIRecommendationEngineModal
-        isOpen={isAIEngineModalOpen}
-        onClose={() => setIsAIEngineModalOpen(false)}
-        products={products}
-        browsingHistory={browsingHistory}
-        orders={orders}
-        wishlistIds={wishlistIds}
-        onToggleWishlist={handleToggleWishlist}
-        onSelectProduct={handleSelectProduct}
-        onAddToCart={handleAddToCart}
-        onOpenARTryOn={handleOpenARTryOn}
-      />
-
-      {/* Product Detail Modal */}
-      <ProductDetailModal
-        product={selectedProduct}
-        onClose={() => setSelectedProduct(null)}
-        isWishlisted={selectedProduct ? wishlistIds.includes(selectedProduct.id) : false}
-        onToggleWishlist={handleToggleWishlist}
-        onAddToCart={handleAddToCart}
-        onBuyNow={(prod, blouse) => {
-          handleAddToCart(prod, blouse);
-          setSelectedProduct(null);
-          setIsCartOpen(true);
-        }}
-        openARTryOn={handleOpenARTryOn}
-      />
-
-      {/* AR Virtual Try-On Modal */}
-      <ARTryOnModal
-        isOpen={isARTryOnOpen}
-        onClose={() => setIsARTryOnOpen(false)}
-        product={arTryOnProduct}
-      />
-
-      {/* AI Chatbot Drawer */}
-      <AIChatbotDrawer
-        isOpen={isAIStylistOpen}
-        onClose={() => setIsAIStylistOpen(false)}
-        products={products}
-        onSelectProduct={(p) => {
-          handleSelectProduct(p);
-          setIsAIStylistOpen(false);
-        }}
-      />
-
-      {/* Voice Search Modal */}
-      <VoiceSearchModal
-        isOpen={isVoiceSearchOpen}
-        onClose={() => setIsVoiceSearchOpen(false)}
-        onSearchResult={(term) => {
-          setSearchQuery(term);
-          setIsVoiceSearchOpen(false);
-        }}
-      />
-
-      {/* Image Search Modal */}
-      <ImageSearchModal
-        isOpen={isImageSearchOpen}
-        onClose={() => setIsImageSearchOpen(false)}
-        products={products}
-        onSelectProduct={(p) => {
-          handleSelectProduct(p);
-          setIsImageSearchOpen(false);
-        }}
-      />
-
-      {/* Cart & Checkout Drawer */}
-      <CartDrawer
-        isOpen={isCartOpen}
-        onClose={() => setIsCartOpen(false)}
-        cartItems={cartItems}
-        onUpdateQuantity={handleUpdateQuantity}
-        onRemoveItem={handleRemoveCartItem}
-        onClearCart={() => setCartItems([])}
-        walletCoins={walletCoins}
-        onOrderSuccess={handleOrderSuccess}
-        onPlaceOrder={handleOrderSuccess}
-        openAuth={() => setIsAuthOpen(true)}
-        isLoggedIn={user.isLoggedIn}
-      />
-
-      {/* Wishlist Drawer */}
-      <WishlistDrawer
-        isOpen={isWishlistOpen}
-        onClose={() => setIsWishlistOpen(false)}
-        products={products}
-        wishlistIds={wishlistIds}
-        onToggleWishlist={handleToggleWishlist}
-        onAddToCart={handleAddToCart}
-        onSelectProduct={handleSelectProduct}
-        onTriggerSimulatedDrop={handleTriggerSimulatedDrop}
-        onOpenCart={() => setIsCartOpen(true)}
-      />
-
-      {/* Auth Modal */}
-      <AuthModal
-        isOpen={isAuthOpen}
-        onClose={() => setIsAuthOpen(false)}
-        user={user}
-        orders={orders}
-        onLoginSuccess={(u) => {
-          setUser({ ...u, isLoggedIn: true });
-          setIsAuthOpen(false);
-        }}
-        onOpenOrderTracker={(ord) => {
-          setTrackedOrder(ord);
-          setIsOrderTrackerOpen(true);
-        }}
-      />
-
-      {/* Wallet Modal */}
-      <WalletModal
-        isOpen={isWalletOpen}
-        onClose={() => setIsWalletOpen(false)}
-        coins={walletCoins}
-        userPhone={user.phone}
-        onAddCoins={(amount) => setWalletCoins((prev) => prev + amount)}
-      />
-
-      {/* Admin Panel Modal */}
-      <AdminPanelModal
-        isOpen={isAdminOpen}
-        onClose={() => setIsAdminOpen(false)}
-        products={products}
-        banners={banners}
-        adBanner={adBanner}
-        queries={queries}
-        orders={orders}
-        showFlashSaleAlert={showFlashSaleAlert}
-        onToggleFlashSaleAlert={setShowFlashSaleAlert}
-        onUpdateBanners={setBanners}
-        onUpdateAdBanner={setAdBanner}
-        onUpdateProducts={setProducts}
-        onUpdateOrderStatus={handleUpdateOrderStatus}
-        onOpenOrderTracker={(ord) => {
-          setTrackedOrder(ord);
-          setIsOrderTrackerOpen(true);
-        }}
-        onResolveQuery={(id) =>
-          setQueries((prev) => prev.map((q) => (q.id === id ? { ...q, status: 'RESOLVED' } : q)))
-        }
-      />
-
-      {/* Real-Time Order & Handloom Tracker Modal */}
-      <OrderTrackerModal
-        isOpen={isOrderTrackerOpen}
-        onClose={() => setIsOrderTrackerOpen(false)}
-        order={trackedOrder}
-      />
-
-      {/* Saree Draping Tutorial Modal */}
-      <AIDrapingGuideModal
-        isOpen={isDrapingTutorialOpen}
-        onClose={() => setIsDrapingTutorialOpen(false)}
-        product={selectedProduct || products[0] || null}
-      />
-
-      {/* AI Style Quiz & Persona Generator Modal */}
-      <AIStyleQuizModal
-        isOpen={isStyleQuizOpen}
-        onClose={() => setIsStyleQuizOpen(false)}
-        products={products}
-        onSelectProduct={(product) => handleSelectProduct(product)}
-        onAddToCart={(product) => handleAddToCart(product)}
-      />
+      <AIRecommendationEngineModal isOpen={isAIEngineModalOpen} onClose={() => setIsAIEngineModalOpen(false)} products={products} browsingHistory={browsingHistory} orders={orders} wishlistIds={wishlistIds} onToggleWishlist={handleToggleWishlist} onSelectProduct={handleSelectProduct} onAddToCart={handleAddToCart} onOpenARTryOn={handleOpenARTryOn} />
+      <ProductDetailModal product={selectedProduct} onClose={() => setSelectedProduct(null)} isWishlisted={selectedProduct? wishlistIds.includes(selectedProduct.id) : false} onToggleWishlist={handleToggleWishlist} onAddToCart={handleAddToCart} onBuyNow={(prod, blouse) => { handleAddToCart(prod, blouse); setSelectedProduct(null); setIsCartOpen(true); }} openARTryOn={handleOpenARTryOn} />
+      <ARTryOnModal isOpen={isARTryOnOpen} onClose={() => setIsARTryOnOpen(false)} product={arTryOnProduct} />
+      <AIChatbotDrawer isOpen={isAIStylistOpen} onClose={() => setIsAIStylistOpen(false)} products={products} onSelectProduct={(p) => { handleSelectProduct(p); setIsAIStylistOpen(false); }} />
+      <VoiceSearchModal isOpen={isVoiceSearchOpen} onClose={() => setIsVoiceSearchOpen(false)} onSearchResult={(term) => { setSearchQuery(term); setIsVoiceSearchOpen(false); }} />
+      <ImageSearchModal isOpen={isImageSearchOpen} onClose={() => setIsImageSearchOpen(false)} products={products} onSelectProduct={(p) => { handleSelectProduct(p); setIsImageSearchOpen(false); }} />
+      <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} cartItems={cartItems} onUpdateQuantity={handleUpdateQuantity} onRemoveItem={handleRemoveCartItem} onClearCart={() => setCartItems([])} walletCoins={walletCoins} onOrderSuccess={handleOrderSuccess} onPlaceOrder={handleOrderSuccess} openAuth={() => setIsAuthOpen(true)} isLoggedIn={user.isLoggedIn} />
+      <WishlistDrawer isOpen={isWishlistOpen} onClose={() => setIsWishlistOpen(false)} products={products} wishlistIds={wishlistIds} onToggleWishlist={handleToggleWishlist} onAddToCart={handleAddToCart} onSelectProduct={handleSelectProduct} onTriggerSimulatedDrop={handleTriggerSimulatedDrop} onOpenCart={() => setIsCartOpen(true)} />
+      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} user={user} orders={orders} onLoginSuccess={(u) => { setUser({...u, isLoggedIn: true }); setIsAuthOpen(false); }} onOpenOrderTracker={(ord) => { setTrackedOrder(ord); setIsOrderTrackerOpen(true); }} />
+      <WalletModal isOpen={isWalletOpen} onClose={() => setIsWalletOpen(false)} coins={walletCoins} userPhone={user.phone} onAddCoins={(amount) => setWalletCoins((prev) => prev + amount)} />
+      <AdminPanelModal isOpen={isAdminOpen} onClose={() => setIsAdminOpen(false)} products={products} banners={banners} adBanner={adBanner} queries={queries} orders={orders} showFlashSaleAlert={showFlashSaleAlert} onToggleFlashSaleAlert={setShowFlashSaleAlert} onUpdateBanners={setBanners} onUpdateAdBanner={setAdBanner} onUpdateProducts={setProducts} onUpdateOrderStatus={handleUpdateOrderStatus} onOpenOrderTracker={(ord) => { setTrackedOrder(ord); setIsOrderTrackerOpen(true); }} onResolveQuery={(id) => setQueries((prev) => prev.map((q) => (q.id === id? {...q, status: 'RESOLVED' } : q))) } />
+      <OrderTrackerModal isOpen={isOrderTrackerOpen} onClose={() => setIsOrderTrackerOpen(false)} order={trackedOrder} />
+      <AIDrapingGuideModal isOpen={isDrapingTutorialOpen} onClose={() => setIsDrapingTutorialOpen(false)} product={selectedProduct || products[0] || null} />
+      <AIStyleQuizModal isOpen={isStyleQuizOpen} onClose={() => setIsStyleQuizOpen(false)} products={products} onSelectProduct={(product) => handleSelectProduct(product)} onAddToCart={(product) => handleAddToCart(product)} />
     </div>
   );
 }
-
 export default App;
