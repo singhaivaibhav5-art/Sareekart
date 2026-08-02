@@ -1261,6 +1261,11 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
               </button>
 
               <button
+  onClick={() => setActiveTab('BULK_SALE')}
+  className={`px-3 py-2 rounded-xl transition flex items-center gap-1.5 whitespace-nowrap ${activeTab === 'BULK_SALE' ? 'bg-[#9D174D] text-amber-300 shadow' : 'bg-white text-pink-950 hover:bg-amber-50'}`}
+>
+  Bulk Sale (1000s)
+</button>
                 onClick={() => setActiveTab('PRODUCTS')}
                 className={`px-3 py-2 rounded-xl transition flex items-center gap-1.5 whitespace-nowrap ${
                   activeTab === 'PRODUCTS' ? 'bg-[#9D174D] text-amber-300 shadow' : 'bg-white text-pink-950 hover:bg-amber-200/80'
